@@ -260,22 +260,25 @@ function App() {
       const base64Data = reader.result.split(',')[1];
       
       try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AQ.Ab8RN6JQgHohVAroOno0f-3BHmXuxHP3j1LehOxC3tqxdwHfYg`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: "Extract the Boolean algebra from this image. Return ONLY the mathematical equations, one per line." },
-              { inline_data: { mime_type: file.type, data: base64Data } }
-            ]
-          }
-        ]
-      })
-    });
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AQ.Ab8RN6L0GJX6D6w8ti_bvhU7J_DpWLsrGbLEUVSgkI-Pja1qaQ`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: "Extract the Boolean algebra from this image. Return ONLY the mathematical equations, one per line." },
+                { inline_data: { mime_type: file.type, data: base64Data } }
+              ]
+            }
+          ]
+        })
+      });
+      
+      const data = await response.json();
+   
 
         const data = await response.json();
         if (!response.ok) {
