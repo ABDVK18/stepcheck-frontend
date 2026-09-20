@@ -260,7 +260,7 @@ function App() {
       const base64Data = reader.result.split(',')[1];
       
       try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AQ.Ab8RN6LcFSoCUCgBvHKlMyglwn0U7JSSVZijFHT7YunLz1MqCA`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AQ.Ab8RN6JQgHohVAroOno0f-3BHmXuxHP3j1LehOxC3tqxdwHfYg`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
