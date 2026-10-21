@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 // 1. Error Boundary Component
@@ -32,41 +31,7 @@ export default function AppWrapper() {
   return <ErrorBoundary><App /></ErrorBoundary>;
 }
 
-// 2. Spotlight Card Component for Interactive Upload Zone
-const SpotlightCard = ({ children, className = "", spotlightColor = "rgba(37, 99, 235, 0.12)" }) => {
-  const divRef = React.useRef(null);
-  const [position, setPosition] = React.useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = React.useState(0);
-
-  const handleMouseMove = (e) => {
-    if (!divRef.current) return;
-    const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
-
-  return (
-    <div
-      ref={divRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setOpacity(1)}
-      onMouseLeave={() => setOpacity(0)}
-      className={`relative overflow-hidden ${className}`}
-    >
-      <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-300 z-0"
-        style={{
-          opacity,
-          background: `radial-gradient(350px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 80%)`,
-        }}
-      />
-      <div className="relative z-10 w-full h-full">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// 3. Truth Table Visualizer Component
+// 2. Truth Table Visualizer Component
 const TruthTableVisualizer = ({ steps }) => {
   const vars = [...new Set(steps.join('').match(/[A-Z]/g) || [])].sort();
   if (vars.length === 0) return null;
@@ -133,7 +98,7 @@ const TruthTableVisualizer = ({ steps }) => {
   );
 };
 
-// 4. Hardware Synthesizer Component (Verilog Output)
+// 3. Hardware Synthesizer Component (Verilog Output)
 const HardwareSynthesizer = ({ steps, isValid }) => {
   if (!isValid || steps.length === 0) return null;
 
@@ -176,7 +141,6 @@ function App() {
   const [status, setStatus] = useState('idle'); 
   const [result, setResult] = useState(null);
   const [steps, setSteps] = useState([]);
-  const [mode, setMode] = useState('upload'); 
   const [errorMessage, setErrorMessage] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -249,61 +213,6 @@ function App() {
     }
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setStatus('scanning');
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = async () => {
-      const base64Data = reader.result.split(',')[1];
-      
-      try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AQ.Ab8RN6L0GJX6D6w8ti_bvhU7J_DpWLsrGbLEUVSgkI-Pja1qaQ`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: "Extract the Boolean algebra from this image. Return ONLY the mathematical equations, one per line." },
-                { inline_data: { mime_type: file.type, data: base64Data } }
-              ]
-            }
-          ]
-        })
-      });
-      
-      const data = await response.json();
-   
-
-        const data = await response.json();
-        if (!response.ok) {
-           throw new Error(data.error?.message || "Google API rejected the request.");
-        }
-
-        const extractedText = data.candidates[0].content.parts[0].text;
-        const stepArray = extractedText.split('\n').map(s => s.trim()).filter(s => s !== '');
-
-        if (stepArray.length < 2) {
-          setErrorMessage(`AI Output: "${extractedText}". Not enough logic lines found.`);
-          setStatus('error');
-          return;
-        }
-        
-        verifyMath(stepArray);
-
-      } catch (error) {
-        console.error("Gemini Vision API Failed:", error);
-        setErrorMessage(error.message || "Vision extraction failed.");
-        setStatus('error');
-      }
-    };
-  };
-
   const handleManualSubmit = () => {
     const stepArray = manualInput.split('\n').map(s => s.trim()).filter(s => s !== '');
     if (stepArray.length < 2) {
@@ -360,48 +269,26 @@ function App() {
 
         {status === 'idle' && (
           <div className="space-y-4 animate-fade-in">
-            <div className="flex justify-center space-x-4 mb-6">
-              <button onClick={() => setMode('upload')} className={`px-4 py-2 font-bold rounded-lg ${mode === 'upload' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>Image Upload</button>
-              <button onClick={() => setMode('manual')} className={`px-4 py-2 font-bold rounded-lg ${mode === 'manual' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>Live Editor</button>
+            <div className="space-y-4">
+              <textarea 
+                value={manualInput} 
+                onChange={(e) => setManualInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full h-40 p-4 border border-gray-300 rounded-xl font-mono text-lg focus:ring-2 focus:ring-black focus:outline-none"
+                placeholder="Enter Boolean logic (e.g., A(B ^ C) or A ^ B)&#10;Press Ctrl + Enter to verify."
+              />
+              <button onClick={handleManualSubmit} className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md">
+                Verify Logic Now
+              </button>
             </div>
-
-            {mode === 'upload' ? (
-              <SpotlightCard className="w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white transition-all hover:border-gray-400 shadow-sm">
-                <label className="flex flex-col items-center justify-center w-full h-56 cursor-pointer">
-                  <div className="w-10 h-10 mb-3 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
-                    ↑
-                  </div>
-                  <span className="text-gray-600 font-semibold tracking-tight">
-                    Drag & drop or click to upload photo
-                  </span>
-                  <span className="text-xs text-gray-400 mt-1">
-                    Supports PNG, JPG, or equation snapshots
-                  </span>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleUpload} />
-                </label>
-              </SpotlightCard>
-            ) : (
-              <div className="space-y-4">
-                <textarea 
-                  value={manualInput} 
-                  onChange={(e) => setManualInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full h-40 p-4 border border-gray-300 rounded-xl font-mono text-lg focus:ring-2 focus:ring-black focus:outline-none"
-                  placeholder="Enter Boolean logic (e.g., A(B ^ C) or A ^ B)&#10;Press Ctrl + Enter to verify."
-                />
-                <button onClick={handleManualSubmit} className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md">
-                  Verify Logic Now
-                </button>
-              </div>
-            )}
           </div>
         )}
 
-        {(status === 'scanning' || status === 'grading') && (
+        {status === 'grading' && (
           <div className="flex flex-col items-center space-y-6 py-12">
             <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
             <p className="text-gray-600 font-medium text-lg animate-pulse">
-              {status === 'scanning' ? "Extracting Math via Gemini 3.0 Flash..." : "C++ Engine evaluating truth tables..."}
+              C++ Engine evaluating truth tables...
             </p>
           </div>
         )}
